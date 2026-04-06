@@ -17,11 +17,8 @@ from typing import Optional
 # Password hashing - using bcrypt directly with proper truncation
 import bcrypt
 
-# Face recognition
-try:
-    import face_recognition
-except ImportError:
-    face_recognition = None
+# Face recognition - using OpenCV DNN
+import face_recognition_dnn as face_recognition
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
