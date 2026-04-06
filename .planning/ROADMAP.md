@@ -8,7 +8,7 @@
 ## Phases
 
 - [x] **Phase 1: Foundation** - Project scaffolding, FastAPI backend, React frontend, database ✓ COMPLETE
-- [ ] **Phase 2: Authentication** - User signup, login, logout
+- [x] **Phase 2: Authentication** - User signup, login, logout ✓ COMPLETE
 - [ ] **Phase 3: User Management & Face Enrollment** - Admin user CRUD, face image enrollment
 - [ ] **Phase 4: Face Recognition & Anti-Spoofing** - Real-time detection, matching, liveness
 - [ ] **Phase 5: Attendance Recording** - Auto-attendance with timestamps, duplicate prevention
@@ -56,7 +56,9 @@
 2. User can log in and stay logged in across browser sessions (JWT/session)
 3. User can log out from any page
 
-**Plans:** TBD
+**Plans:** 1 plan in 1 wave
+
+- [ ] 02-01-PLAN.md — Verify authentication flow (signup, login, logout)
 
 **UI hint:** yes
 
@@ -145,7 +147,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-04-06 |
-| 2. Authentication | 0/3 | In progress | - |
+| 2. Authentication | 1/1 | ✓ Complete | 2026-04-06 |
 | 3. User Management & Face Enrollment | 0/4 | Not started | - |
 | 4. Face Recognition & Anti-Spoofing | 0/4 | Not started | - |
 | 5. Attendance Recording | 0/3 | Not started | - |
