@@ -81,4 +81,61 @@ export const attendance = {
   },
 };
 
+// Recognition service
+export interface BoundingBox {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface RecognitionMatch {
+  user_id: number;
+  name: string;
+  email: string;
+  confidence: number;
+}
+
+export interface FaceDetectionResponse {
+  faces: BoundingBox[];
+  count: number;
+}
+
+export interface RecognitionResponse {
+  matches: RecognitionMatch[];
+  unknown_count: number;
+}
+
+export interface LivenessResponse {
+  is_live: boolean;
+  blink_count: number;
+  confidence: number;
+  message: string;
+}
+
+export const recognition = {
+  detectFaces: async (imageBase64: string): Promise<FaceDetectionResponse> => {
+    const response = await api.post('/recognition/detect', { image: imageBase64 });
+    return response.data;
+  },
+
+  recognizeFaces: async (imageBase64: string): Promise<RecognitionResponse> => {
+    const response = await api.post('/recognition/recognize', { image: imageBase64 });
+    return response.data;
+  },
+
+  checkLiveness: async (frames: { frame: string; timestamp: number }[]): Promise<LivenessResponse> => {
+    const response = await api.post('/recognition/liveness', { frames });
+    return response.data;
+  },
+
+  markAttendance: async (userId: number, photoData?: string) => {
+    const response = await api.post('/recognition/mark-attendance', { 
+      user_id: userId, 
+      photo_data: photoData 
+    });
+    return response.data;
+  },
+};
+
 export default api;
