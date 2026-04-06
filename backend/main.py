@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -8,9 +8,19 @@ from datetime import datetime, timedelta
 from typing import Optional
 import database
 import models
+import pickle
+import numpy as np
+from PIL import Image
+import io
 
 # Password hashing - using bcrypt directly with proper truncation
 import bcrypt
+
+# Face recognition
+try:
+    import face_recognition
+except ImportError:
+    face_recognition = None
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -61,6 +71,14 @@ class UserResponse(BaseModel):
     email: str
     name: str
     role: str
+
+
+# Admin user management models
+class UserCreateAdmin(BaseModel):
+    email: EmailStr
+    name: str
+    password: Optional[str] = None
+    role: Optional[str] = "user"
 
 
 def create_access_token(data: dict):
@@ -114,6 +132,16 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
+    """Require admin role"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user
 
 
 # FastAPI app
@@ -200,6 +228,155 @@ async def get_me(current_user: models.User = Depends(get_current_user)):
         name=current_user.name,
         role=current_user.role,
     )
+
+
+# ==================== ADMIN USER MANAGEMENT ====================
+
+
+class UserListResponse(BaseModel):
+    users: list[UserResponse]
+
+
+@app.post("/api/admin/users", response_model=UserResponse)
+async def create_user(
+    user_data: UserCreateAdmin,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(require_admin),
+):
+    """Create a new user (admin only)"""
+    # Check if email exists
+    existing = (
+        db.query(models.User).filter(models.User.email == user_data.email).first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    # Create user
+    hashed_password = get_password_hash(user_data.password or "changeme123")
+    new_user = models.User(
+        email=user_data.email,
+        password_hash=hashed_password,
+        name=user_data.name,
+        role=user_data.role or "user",
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return UserResponse(
+        id=new_user.id,
+        email=new_user.email,
+        name=new_user.name,
+        role=new_user.role,
+    )
+
+
+@app.get("/api/admin/users", response_model=UserListResponse)
+async def list_users(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(require_admin),
+):
+    """List all users (admin only)"""
+    users = db.query(models.User).all()
+    return UserListResponse(
+        users=[
+            UserResponse(id=u.id, email=u.email, name=u.name, role=u.role)
+            for u in users
+        ]
+    )
+
+
+@app.delete("/api/admin/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(require_admin),
+):
+    """Delete a user (admin only)"""
+    # Cannot delete yourself
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account",
+        )
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    db.delete(user)
+    db.commit()
+
+    return {"message": "User deleted successfully"}
+
+
+# ==================== FACE ENROLLMENT ====================
+
+
+@app.post("/api/users/face-enroll")
+async def enroll_face(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(database.get_db),
+):
+    """Enroll face encoding for the current user"""
+    if face_recognition is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Face recognition library not available",
+        )
+
+    # Read and process image
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+
+        # Convert to RGB (face_recognition expects RGB)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # Convert to numpy array
+        image_array = np.array(image)
+
+        # Get face encodings
+        encodings = face_recognition.face_encodings(image_array)
+
+        if not encodings:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No face detected in the image. Please upload a clear photo of your face.",
+            )
+
+        if len(encodings) > 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Multiple faces detected. Please upload an image with only one face.",
+            )
+
+        # Store encoding as pickle
+        encoding_data = pickle.dumps(encodings[0])
+        current_user.face_encoding = encoding_data
+        db.commit()
+
+        return {
+            "message": "Face enrolled successfully",
+            "user_id": current_user.id,
+            "name": current_user.name,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing image: {str(e)}",
+        )
 
 
 if __name__ == "__main__":
