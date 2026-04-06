@@ -9,9 +9,9 @@
 
 - [x] **Phase 1: Foundation** - Project scaffolding, FastAPI backend, React frontend, database ✓ COMPLETE
 - [x] **Phase 2: Authentication** - User signup, login, logout ✓ COMPLETE
-- [ ] **Phase 3: User Management & Face Enrollment** - Admin user CRUD, face image enrollment
-- [ ] **Phase 4: Face Recognition & Anti-Spoofing** - Real-time detection, matching, liveness
-- [ ] **Phase 5: Attendance Recording** - Auto-attendance with timestamps, duplicate prevention
+- [x] **Phase 3: User Management & Face Enrollment** - Admin user CRUD, face image enrollment ✓ COMPLETE
+- [x] **Phase 4: Face Recognition & Anti-Spoofing** - Real-time detection, matching, liveness ✓ COMPLETE
+- [ ] **Phase 5: Attendance Recording** - Auto-attendance with timestamps, duplicate prevention (IN PROGRESS)
 - [ ] **Phase 6: Reporting & Dashboard** - Attendance view, CSV export, date filtering
 
 ---
@@ -79,7 +79,9 @@
 3. Admin can remove users from the system
 4. Users can upload face images that get encoded and stored for recognition
 
-**Plans:** TBD
+**Plans:** 1 plan in 1 wave
+
+- [ ] 03-01-PLAN.md — User management CRUD and face enrollment
 
 ---
 
@@ -118,7 +120,9 @@
 2. Each attendance entry includes precise timestamp
 3. Duplicate attendance within the same session is prevented (one entry per person per day)
 
-**Plans:** TBD
+**Plans:** 1 plan in 1 wave
+
+- [x] 05-01-PLAN.md — Integrate recognition with attendance marking and duplicate prevention
 
 ---
 
@@ -148,7 +152,7 @@
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-04-06 |
 | 2. Authentication | 1/1 | ✓ Complete | 2026-04-06 |
-| 3. User Management & Face Enrollment | 0/4 | Not started | - |
-| 4. Face Recognition & Anti-Spoofing | 0/4 | Not started | - |
-| 5. Attendance Recording | 0/3 | Not started | - |
+| 3. User Management & Face Enrollment | 1/1 | ✓ Complete | 2026-04-06 |
+| 4. Face Recognition & Anti-Spoofing | 1/1 | ✓ Complete | 2026-04-06 |
+| 5. Attendance Recording | 1/1 | ✓ Planned | - |
 | 6. Reporting & Dashboard | 0/3 | Not started | - |
