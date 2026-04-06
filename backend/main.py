@@ -188,8 +188,15 @@ async def register(user_data: UserCreate, db: Session = Depends(database.get_db)
         role="user",
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}",
+        )
 
     return UserResponse(
         id=new_user.id, email=new_user.email, name=new_user.name, role=new_user.role

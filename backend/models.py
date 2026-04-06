@@ -10,6 +10,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     name = Column(String)
     password_hash = Column(String)
+    role = Column(String, default="user")
     is_admin = Column(Boolean, default=False)
     face_encoding = Column(LargeBinary, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
