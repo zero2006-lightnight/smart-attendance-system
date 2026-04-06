@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/GlassCard';
 import CameraFeed from '../components/CameraFeed';
 import LivenessChecker from '../components/LivenessChecker';
-import { auth } from '../services/api';
+import { auth, recognition, RecognitionMatch } from '../services/api';
 
 interface User {
   id: number;
@@ -24,6 +24,8 @@ const Dashboard: React.FC = () => {
   const [livenessVerified, setLivenessVerified] = useState(false);
   const [securityAlerts, setSecurityAlerts] = useState<string[]>([]);
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats>({ present: 0, total: 0 });
+  const [recognizedUser, setRecognizedUser] = useState<RecognitionMatch | null>(null);
+  const [attendanceMessage, setAttendanceMessage] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,6 +53,46 @@ const Dashboard: React.FC = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
+  };
+
+  const handleFaceRecognized = async (matchedUser: RecognitionMatch) => {
+    setRecognizedUser(matchedUser);
+    setShowLiveness(true);
+    setLivenessVerified(false);
+  };
+
+  const handleLivenessVerified = async () => {
+    if (!recognizedUser) return;
+    try {
+      const result = await recognition.markAttendance(recognizedUser.user_id);
+      if (result.success) {
+        setAttendanceMessage({ type: 'success', message: `Attendance marked for ${recognizedUser.name}!` });
+        setAttendanceStats(prev => ({ ...prev, present: prev.present + 1 }));
+        setSecurityAlerts(prev => [...prev, `Attendance marked for ${recognizedUser.name} at ${new Date().toLocaleTimeString()}`]);
+      } else {
+        setAttendanceMessage({ type: 'info', message: result.message || 'Attendance already marked for today' });
+        setSecurityAlerts(prev => [...prev, `${recognizedUser.name}: ${result.message}`]);
+      }
+    } catch (err: any) {
+      setAttendanceMessage({ type: 'error', message: err?.response?.data?.detail || 'Failed to mark attendance' });
+    }
+    setShowLiveness(false);
+    setLivenessVerified(true);
+    setRecognizedUser(null);
+  };
+
+  const handleLivenessFailed = (message: string) => {
+    setAttendanceMessage({ type: 'error', message: `Liveness verification failed: ${message}` });
+    setSecurityAlerts(prev => [...prev, `Liveness failed for ${recognizedUser?.name || 'unknown'}: ${message}`]);
+    setShowLiveness(false);
+    setRecognizedUser(null);
+  };
+
+  const resetAttendance = () => {
+    setLivenessVerified(false);
+    setShowLiveness(false);
+    setRecognizedUser(null);
+    setAttendanceMessage(null);
   };
 
   if (loading) {
@@ -130,6 +172,17 @@ const Dashboard: React.FC = () => {
             {/* Live Camera Feed - Large */}
             <GlassCard className="col-span-1 lg:col-span-2 row-span-2 min-h-[400px]">
               <h2 className="text-xl font-semibold mb-4">Live Camera Feed</h2>
+              
+              {attendanceMessage && (
+                <div className={`mb-4 p-3 rounded-lg text-sm ${
+                  attendanceMessage.type === 'success' ? 'bg-green-500/20 text-green-400' :
+                  attendanceMessage.type === 'error' ? 'bg-red-500/20 text-red-400' :
+                  'bg-blue-500/20 text-blue-400'
+                }`}>
+                  {attendanceMessage.message}
+                </div>
+              )}
+              
               {!livenessVerified ? (
                 <div className="bg-black/50 rounded-xl aspect-video flex flex-col items-center justify-center">
                   {!showLiveness ? (
@@ -148,38 +201,24 @@ const Dashboard: React.FC = () => {
                   ) : (
                     <div className="w-full max-w-md">
                       <button
-                        onClick={() => setShowLiveness(false)}
+                        onClick={() => { setShowLiveness(false); setRecognizedUser(null); }}
                         className="mb-4 text-sm text-text-secondary hover:text-white"
                       >
                         ← Back
                       </button>
                       <LivenessChecker
-                        onVerified={() => setLivenessVerified(true)}
-                        onComplete={(success) => {
-                          if (!success) {
-                            setSecurityAlerts(prev => [...prev, `Liveness check failed at ${new Date().toLocaleTimeString()}`]);
-                          }
-                        }}
+                        onVerified={handleLivenessVerified}
+                        onFailed={handleLivenessFailed}
+                        onComplete={() => {}}
                       />
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="relative">
-                  <CameraFeed
-                    onAttendanceMarked={(matchedUser) => {
-                      setAttendanceStats(prev => ({ ...prev, present: prev.present + 1 }));
-                      setSecurityAlerts(prev => [...prev, `Attendance marked for ${matchedUser.name}`]);
-                    }}
-                  />
+                  <CameraFeed onAttendanceMarked={handleFaceRecognized} />
                   <div className="mt-4 flex gap-4">
-                    <button
-                      onClick={() => {
-                        setLivenessVerified(false);
-                        setShowLiveness(false);
-                      }}
-                      className="text-sm text-text-secondary hover:text-white"
-                    >
+                    <button onClick={resetAttendance} className="text-sm text-text-secondary hover:text-white">
                       Reset
                     </button>
                   </div>
