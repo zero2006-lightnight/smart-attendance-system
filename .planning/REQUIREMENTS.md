@@ -32,9 +32,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Attendance
 
-- [ ] **ATT-01**: System automatically records attendance when face is recognized
-- [ ] **ATT-02**: System records timestamp for each attendance entry
-- [ ] **ATT-03**: Duplicate attendance within same session is prevented
+- [x] **ATT-01**: System automatically records attendance when face is recognized
+- [x] **ATT-02**: System records timestamp for each attendance entry
+- [x] **ATT-03**: Duplicate attendance within same session is prevented
 
 ### Reporting
 
@@ -95,9 +95,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-01 | Phase 3 | Pending |
 | USER-02 | Phase 3 | Pending |
 | USER-03 | Phase 3 | Pending |
-| ATT-01 | Phase 5 | Pending |
-| ATT-02 | Phase 5 | Pending |
-| ATT-03 | Phase 5 | Pending |
+| ATT-01 | Phase 5 | Complete |
+| ATT-02 | Phase 5 | Complete |
+| ATT-03 | Phase 5 | Complete |
 | REPT-01 | Phase 6 | Pending |
 | REPT-02 | Phase 6 | Pending |
 | REPT-03 | Phase 6 | Pending |
